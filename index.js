@@ -57,7 +57,10 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine) {
           }
           respond(payload)
         },
-        sendStatus: (statusCode) => respond(statuses(statusCode), statusCode)
+        sendStatus: (statusCode) => respond(statuses(statusCode), statusCode),
+        serverError: (output) => {
+          return res.json(output.stack, 500);
+        }
       }
 
       // Send a valid response for a Lambda function using the API Gateway Proxy.
