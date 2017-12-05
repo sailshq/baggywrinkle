@@ -1,0 +1,15 @@
+{
+  "name": "baggywrinkle",
+  "version": "1.0.0",
+  "description": "Run a machine from an AWS Lambda function.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Scott Gress",
+  "license": "MIT",
+  "dependencies": {
+    "machine-as-action": "^9.0.2",
+    "statuses": "1.4.0"
+  }
+}
