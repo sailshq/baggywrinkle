@@ -1,7 +1,7 @@
 const machineAsAction = require('machine-as-action');
 const statuses = require('statuses');
 
-module.exports = function machineAsLambda(optsOrMachineDefOrMachine) {
+module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap) {
 
   // MAAify the passed-in machine (or machine def), unless it's already been done.
   let actionMachine = optsOrMachineDefOrMachine.IS_MACHINE_AS_ACTION ? optsOrMachineDefOrMachine : machineAsAction(optsOrMachineDefOrMachine);
@@ -77,6 +77,27 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine) {
         });
       }
 
+      // If there's a bootstrap, run that first.
+      if (typeof bootstrap === 'function') {
+        bootstrap((err) => {
+          if (err) {
+            callback(null,{
+              statusCode: 500,
+              headers: {},
+              body: JSON.stringify({
+                event: event,
+                error: err.stack
+              })
+            });
+            return;
+          }
+
+          // Run the machine after a successful return from the bootstrap.
+          return actionMachine(req, res);
+        });
+        return;
+      }
+
       // Run the machine action with the mocked req and res.
       return actionMachine(req, res);
     }
@@ -89,7 +110,7 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine) {
         headers: {},
         body: JSON.stringify({
           event: event,
-          error: e
+          error: e.stack
         })
       });
     }
