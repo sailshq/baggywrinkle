@@ -1,7 +1,7 @@
 const machineAsAction = require('machine-as-action');
 const statuses = require('statuses');
 
-module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap) {
+module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, teardown) {
 
   // MAAify the passed-in machine (or machine def), unless it's already been done.
   let actionMachine = optsOrMachineDefOrMachine.IS_MACHINE_AS_ACTION ? optsOrMachineDefOrMachine : machineAsAction(optsOrMachineDefOrMachine);
@@ -69,6 +69,15 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap) 
         if (_headers) { Object.assign(headers, _headers ); }
         if (!(headers['Content-Length'])) {
           headers['Content-Length'] = body.toString().length;
+        }
+        if (teardown) {
+          return teardown(() => {
+            callback(null, {
+              statusCode: statusCode,
+              headers: headers,
+              body: body
+            });
+          })
         }
         callback(null, {
           statusCode: statusCode,
