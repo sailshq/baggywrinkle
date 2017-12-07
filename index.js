@@ -26,6 +26,14 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
 
     try {
 
+      //  ███████╗███████╗████████╗██╗   ██╗██████╗
+      //  ██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗
+      //  ███████╗█████╗     ██║   ██║   ██║██████╔╝
+      //  ╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝
+      //  ███████║███████╗   ██║   ╚██████╔╝██║
+      //  ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝
+      //
+
       // Keep track of headers set in the machine.
       let headers = {};
 
@@ -69,15 +77,28 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
         }
       }
 
-      // Send a valid response for a Lambda function using the API Gateway Proxy.
+      // Helper function to send a valid response for a Lambda function using the API Gateway Proxy.
       const respond = (body, _statusCode, _headers) => {
+
+        // Set the status code for the response.
         if (_statusCode) { statusCode = _statusCode; }
+
+        // Set the headers for the response.
         if (_headers) { Object.assign(headers, _headers ); }
+        // If a content-length header wasn't added manually, put one in now based on the body length.
         if (!(headers['Content-Length'])) {
           headers['Content-Length'] = body.toString().length;
         }
-        if (teardown) {
-          return teardown(() => {
+        // Add CORS headers if necessary.
+        if (options.cors && (options.cors.origin === '*' || event.headers['Origin'] === options.cors.origin)) {
+          headers['Access-Control-Allow-Origin'] = options.cors.origin;
+          headers['Access-Control-Allow-Headers'] = typeof options.cors.headers === 'string' ? options.cors.headers : options.cors.headers.join(',');
+          headers['Access-Control-Allow-Credentials'] = options.cors.allowCredentials;
+        }
+
+        // If a teardown option was specified, run the teardown before sending the response.
+        if (options.teardown) {
+          return options.teardown(() => {
             callback(null, {
               statusCode: statusCode,
               headers: headers,
@@ -85,6 +106,8 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
             });
           })
         }
+
+        // Otherwise just send the response.
         callback(null, {
           statusCode: statusCode,
           headers: headers,
@@ -92,9 +115,17 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
         });
       }
 
+      //  ██████╗ ██╗   ██╗███╗   ██╗     █████╗  ██████╗████████╗██╗ ██████╗ ███╗   ██╗
+      //  ██╔══██╗██║   ██║████╗  ██║    ██╔══██╗██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║
+      //  ██████╔╝██║   ██║██╔██╗ ██║    ███████║██║        ██║   ██║██║   ██║██╔██╗ ██║
+      //  ██╔══██╗██║   ██║██║╚██╗██║    ██╔══██║██║        ██║   ██║██║   ██║██║╚██╗██║
+      //  ██║  ██║╚██████╔╝██║ ╚████║    ██║  ██║╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║
+      //  ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝    ╚═╝  ╚═╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+      //
+
       // If there's a bootstrap, run that first.
-      if (typeof bootstrap === 'function') {
-        bootstrap((err) => {
+      if (typeof options.bootstrap === 'function') {
+        options.bootstrap((err) => {
           if (err) {
             callback(null,{
               statusCode: 500,
