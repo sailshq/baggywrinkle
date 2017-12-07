@@ -3,6 +3,12 @@ const statuses = require('statuses');
 
 module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, teardown) {
 
+  // Allow both `(optsOrMachineDefOrMachine, options)` and `(optsOrMachineDefOrMachine, bootstrap, teardown)` signatures.
+  let options = typeof bootstrap === 'object' ? bootstrap : {
+    bootstrap,
+    teardown
+  }
+
   // MAAify the passed-in machine (or machine def), unless it's already been done.
   let actionMachine = optsOrMachineDefOrMachine.IS_MACHINE_AS_ACTION ? optsOrMachineDefOrMachine : machineAsAction(optsOrMachineDefOrMachine);
 
