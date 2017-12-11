@@ -115,7 +115,6 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
         if (options.teardown) {
           return options.teardown(() => {
             if (options.noEnvelope) {
-              console.log('body', require('util').inspect(body, { depth: null }));
               return callback(null, body);
             }
             callback(null, {
