@@ -1,6 +1,6 @@
 {
   "name": "baggywrinkle",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Run a machine from an AWS Lambda function.",
   "main": "index.js",
   "scripts": {
