@@ -53,6 +53,9 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
         path: event.path,
         headers: event.headers,
         get: (header, defaultVal) => _lcHeaders[header.toLowerCase()] || defaultVal,
+        authorizationToken: event.authorizationToken,
+        awsEvent: event,
+        awsContext: context
       };
 
       // Mock up the `res` that the action will use.
