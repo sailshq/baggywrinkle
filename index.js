@@ -40,6 +40,9 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
       // Keep track of the status code set by the machine.
       let statusCode = 200;
 
+      // Keep a hash of lower-cased headers for `req.get`.
+      let _lcHeaders = Object.keys(event.headers || {}).reduce((memo, header) => { memo[header.toLowerCase()] = event.headers[header]; return memo }, {});
+
       // Mock up the `req` that the action will use.
       const req = {
         param: (key) => {
@@ -47,7 +50,9 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
         },
         query: event.queryStringParameters,
         method: event.httpMethod,
-        path: event.path
+        path: event.path,
+        headers: event.headers,
+        get: (header, defaultVal) => _lcHeaders[header.toLowerCase()] || defaultVal,
       };
 
       // Mock up the `res` that the action will use.
