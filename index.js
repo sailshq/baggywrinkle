@@ -89,13 +89,13 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
           return res.json(output.stack, 500);
         },
         badRequest: (output) => {
-          return res.json(output.stack, 400);
+          return res.sendStatus(400);
         },
         forbidden: (output) => {
-          return res.json(output.stack, 403);
+          return res.sendStatus(403);
         },
         notFound: (output) => {
-          return res.json(output.stack, 404);
+          return res.sendStatus(404);
         },
         // Allow setting context for AWS response (mainly for use in authorizers).
         context: {}
