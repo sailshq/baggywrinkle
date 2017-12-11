@@ -64,7 +64,10 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
         status: (statusCode) => { statusCode = statusCode; return res; },
         json: (output) => {
           headers['Content-Type'] = 'application/json';
-          respond(JSON.stringify(output));
+          if (!options.noEnvelope) {
+            output = JSON.stringify(output);
+          }
+          respond(output);
         },
         send: (output) => {
           let payload = output;
@@ -75,14 +78,18 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
             else {
               headers['Content-Type'] = 'application/json';
             }
-            payload = JSON.stringify(payload);
+            if (!options.noEnvelope) {
+              payload = JSON.stringify(payload);
+            }
           }
           respond(payload)
         },
         sendStatus: (statusCode) => respond(statuses(statusCode), statusCode),
         serverError: (output) => {
           return res.json(output.stack, 500);
-        }
+        },
+        // Allow setting context for AWS response (mainly for use in authorizers).
+        context: {}
       }
 
       // Helper function to send a valid response for a Lambda function using the API Gateway Proxy.
@@ -100,26 +107,35 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
         // Add CORS headers if necessary.
         if (options.cors && (options.cors.origin === '*' || event.headers['Origin'] === options.cors.origin)) {
           headers['Access-Control-Allow-Origin'] = options.cors.origin;
-          headers['Access-Control-Allow-Headers'] = typeof options.cors.headers === 'string' ? options.cors.headers : options.cors.headers.join(',');
+          headers['Access-Control-Allow-Headers'] = options.cors.headers && (typeof options.cors.headers === 'string' ? options.cors.headers : options.cors.headers.join(','));
           headers['Access-Control-Allow-Credentials'] = options.cors.allowCredentials;
         }
 
         // If a teardown option was specified, run the teardown before sending the response.
         if (options.teardown) {
           return options.teardown(() => {
+            if (options.noEnvelope) {
+              console.log('body', require('util').inspect(body, { depth: null }));
+              return callback(null, body);
+            }
             callback(null, {
               statusCode: statusCode,
               headers: headers,
-              body: body
+              body: body,
+              context: res.awsContext
             });
           })
         }
 
         // Otherwise just send the response.
+        if (options.noEnvelope) {
+          return callback(null, body);
+        }
         callback(null, {
           statusCode: statusCode,
           headers: headers,
-          body: body
+          body: body,
+          context: res.awsContext
         });
       }
 
@@ -135,6 +151,12 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
       if (typeof options.bootstrap === 'function') {
         options.bootstrap((err) => {
           if (err) {
+            if (options.noEnvelope) {
+              return callback(null, {
+                event: event,
+                error: err.stack
+              })
+            }
             callback(null,{
               statusCode: 500,
               headers: {},
@@ -159,6 +181,12 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
     // Most errors should be caught by the machine runner and directed to the `error` exit
     // of the machine.  This will catch errors in machine-as-lambda itself.
     catch (e) {
+      if (options.noEnvelope) {
+        return callback(null, {
+          event: event,
+          error: err.stack
+        })
+      }
       callback(null,{
         statusCode: 500,
         headers: {},
