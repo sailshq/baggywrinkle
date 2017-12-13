@@ -10,7 +10,8 @@
   "license": "MIT",
   "dependencies": {
     "@sailshq/lodash": "^3.10.2",
-    "machine-as-action": "^9.0.2",
+    "async": "2.6.0",
+    "machine-as-action": "^10.0.0-0",
     "rttc": "^9.8.2",
     "statuses": "1.4.0"
   }
