@@ -1,9 +1,10 @@
 const _ = require('@sailshq/lodash');
 const rttc = require('rttc');
+const async = require('async');
 const machineAsAction = require('machine-as-action');
 const statuses = require('statuses');
 
-module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, teardown) {
+module.exports = function machineAsLambda(optsOrMachineDefOrMachine, options) {
 
   // Set up global sails mock.
   global.sails = {
@@ -54,11 +55,8 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
 
   });
 
-  // Allow both `(optsOrMachineDefOrMachine, options)` and `(optsOrMachineDefOrMachine, bootstrap, teardown)` signatures.
-  let options = typeof bootstrap === 'object' ? bootstrap : {
-    bootstrap,
-    teardown
-  }
+  // Default options.
+  options = options || {};
 
   // MAAify the passed-in machine (or machine def), unless it's already been done.
   let actionMachine = optsOrMachineDefOrMachine.IS_MACHINE_AS_ACTION ? optsOrMachineDefOrMachine : machineAsAction(optsOrMachineDefOrMachine);
@@ -172,8 +170,11 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
         }
 
         // If a teardown option was specified, run the teardown before sending the response.
-        if (options.teardown) {
-          return options.teardown(() => {
+        if (typeof options.teardown === 'function') {
+          options.teardown = [options.teardown]
+        }
+        if (_.isArray(options.teardown) && options.teardown.length) {
+          return async.series(options.teardown, () => {
             if (options.noEnvelope) {
               return callback(null, body);
             }
@@ -208,7 +209,10 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
 
       // If there's a bootstrap, run that first.
       if (typeof options.bootstrap === 'function') {
-        options.bootstrap((err) => {
+        options.bootstrap = [options.bootstrap]
+      }
+      if (_.isArray(options.bootstrap) && options.bootstrap.length) {
+        async.series(options.bootstrap, (err) => {
           if (err) {
             if (options.noEnvelope) {
               return callback(null, {
@@ -226,7 +230,6 @@ module.exports = function machineAsLambda(optsOrMachineDefOrMachine, bootstrap, 
             });
             return;
           }
-
           // Run the machine after a successful return from the bootstrap.
           return actionMachine(req, res);
         });
