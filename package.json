@@ -11,6 +11,7 @@
   "dependencies": {
     "@sailshq/lodash": "^3.10.2",
     "async": "2.6.0",
+    "machine": "15.0.0-20",
     "machine-as-action": "^10.0.0-0",
     "rttc": "^9.8.2",
     "statuses": "1.4.0"
